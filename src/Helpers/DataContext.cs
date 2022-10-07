@@ -13,10 +13,10 @@ namespace SchoolOfDevs.Helpers
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<User>()
-                .Property(e => e.TyperUser)
+                .Property(e => e.TypeUser)
                 .HasConversion(
                    v => v.ToString(),
-                   v => (TyperUser)Enum.Parse(typeof(TyperUser),v)); // Converte o Enum para string para o banco receber o nome e não o número
+                   v => (TypeUser)Enum.Parse(typeof(TypeUser),v)); // Converte o Enum para string para o banco receber o nome e não o número
                    
         }
         public DbSet<User> Users { get; set; }
