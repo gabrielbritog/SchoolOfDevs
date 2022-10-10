@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SchoolOfDevs.Entities;
 using SchoolOfDevs.Helpers;
-
+using BC= BCrypt.Net.BCrypt;
 namespace SchoolOfDevs.Services
 {
     public interface IUserService
@@ -22,6 +22,10 @@ namespace SchoolOfDevs.Services
         }
         public async Task<User> Create(User user)
         {
+            if (!user.Password.Equals(user.ConfirmPassword))
+            {
+                throw new Exception("Password does not match ConfirmPassword");
+            }
             User userDb = await _context.Users
                 .AsNoTracking() //Exibe uma excessão caso tentem trackear mais de 1 elemento no banco
                 .SingleOrDefaultAsync(u=> u.UserName == user.UserName);
@@ -29,6 +33,8 @@ namespace SchoolOfDevs.Services
             {
                 throw new Exception($"UserName {user.UserName} already exist.");
             }
+            user.Password = BC.HashPassword(user.Password);
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
             return user;
@@ -64,14 +70,25 @@ namespace SchoolOfDevs.Services
             if(userIn.Id != id)
             {
                 throw new Exception("Route id differs User id");
-            } 
+            }
+            else if (!userIn.Password.Equals(userIn.ConfirmPassword))
+            {
+                throw new Exception("Password does not match ConfirmPassword");
+            }
             User userDb = await _context.Users
                 .AsNoTracking()
                .SingleOrDefaultAsync(u => u.Id == id);
             if (userDb is null)
             {
                 throw new Exception($"User{id} not found");
+            }else if(!BC.Verify(userIn.CurrentPassword, userDb.Password)) //Verifica se a senha que está sendo enviada é igual a do banco(Usando a criptografia)
+            {
+                throw new Exception("Incorrect Password");
             }
+
+            userIn.CreatedAt = userDb.CreatedAt;
+            userIn.Password = BC.HashPassword(userIn.Password);
+           
             _context.Entry(userIn).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
