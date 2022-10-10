@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SchoolOfDevs.Entities;
+using SchoolOfDevs.Exceptions;
 using SchoolOfDevs.Helpers;
 
 namespace SchoolOfDevs.Services
@@ -40,7 +41,7 @@ namespace SchoolOfDevs.Services
                 .SingleOrDefaultAsync(u => u.Id == id);
             if (courseDb is null)
             {
-                throw new Exception($"Course{id} not found");
+                throw new KeyNotFoundException($"Course{id} not found");
             }
             _context.Courses.Remove(courseDb);
             await _context.SaveChangesAsync();
@@ -54,7 +55,7 @@ namespace SchoolOfDevs.Services
                 .SingleOrDefaultAsync(u => u.Id == id);
             if (courseDb is null)
             {
-                throw new Exception($"Course{id} not found");
+                throw new KeyNotFoundException($"Course{id} not found");
             }
             return courseDb;
         }
@@ -63,14 +64,14 @@ namespace SchoolOfDevs.Services
         {
             if (courseIn.Id != id)
             {
-                throw new Exception("Route id differs Course id");
+                throw new BadRequestException("Route id differs Course id");
             }
             Course courseDb = await _context.Courses
                 .AsNoTracking()
                .SingleOrDefaultAsync(u => u.Id == id);
             if (courseDb is null)
             {
-                throw new Exception($"Course{id} not found");
+                throw new KeyNotFoundException($"Course{id} not found");
             }
             courseIn.CreatedAt = courseDb.CreatedAt;
             _context.Entry(courseIn).State = EntityState.Modified;
