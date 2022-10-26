@@ -9,6 +9,7 @@ namespace SchoolOfDevs.Profiles
         public UserProfile()
         {
             CreateMap<User, UserRequest>();
+            CreateMap<User, UserRequestUpdate>();
             CreateMap<User, UserResponse>();
         }
     }

@@ -5,7 +5,7 @@ using SchoolOfDevs.Entities;
 using SchoolOfDevs.Enums;
 using SchoolOfDevs.Exceptions;
 using SchoolOfDevs.Helpers;
-using BC= BCrypt.Net.BCrypt;
+using BC = BCrypt.Net.BCrypt;
 namespace SchoolOfDevs.Services
 {
     public interface IUserService
@@ -13,7 +13,7 @@ namespace SchoolOfDevs.Services
         public Task<UserResponse> Create(UserRequest user);
         public Task<UserResponse> GetById(int Id);
         public Task<List<UserResponse>> GetAll();
-        public Task Update(UserRequest userIn, int id);
+        public Task Update(UserRequestUpdate userIn, int id);
         public Task Delete(int id);
     }
     public class UserService : IUserService
@@ -114,11 +114,49 @@ namespace SchoolOfDevs.Services
                 throw new BadRequestException("Incorrect Password");
             }
 
-
+            await AddOrRemoveCourse(userDb, userRequest.CoursesStudingIds);
             userDb.Password = BC.HashPassword(userRequest.Password);
            
             _context.Entry(userDb).State = EntityState.Modified;
             await _context.SaveChangesAsync();
+        }
+
+        private async Task AddOrRemoveCourse(User userDb, int[] coursesIds)
+        {
+            int[] removeIds = userDb.CoursesStudind
+                .Where(e => !coursesIds.Contains(e.Id))
+                .Select(e => e.Id).ToArray();
+
+            int[] addedIds = coursesIds
+                .Where(e => !userDb.CoursesStudind
+                .Select(u => u.Id).ToArray().Contains(e))
+                .ToArray();
+
+            if(!removeIds.Any() && !addedIds.Any())
+            {
+                _context.Entry(userDb).State = EntityState.Detached;
+               return;
+            }
+
+            List<Course> tempCourse = await _context.Courses
+                .Where(e => removeIds.Contains(e.Id) || addedIds.Contains(e.Id))
+                .ToListAsync();
+
+            List<Course> coursesToBeRemoved = tempCourse.Where(e => removeIds.Contains(e.Id)).ToList();
+            foreach(Course course in coursesToBeRemoved)
+            {
+                userDb.CoursesStudind.Remove(course);
+            }
+
+            List<Course> coursesToBeAdded = tempCourse.Where(e => addedIds.Contains(e.Id)).ToList();
+            foreach (Course course in coursesToBeAdded)
+            {
+                userDb.CoursesStudind.Add(course);
+            }
+
+            await _context.SaveChangesAsync();
+            _context.Entry(userDb).State = EntityState.Detached;
+
         }
     }
 }
